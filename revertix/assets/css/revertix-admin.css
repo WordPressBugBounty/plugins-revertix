@@ -509,6 +509,30 @@
 	color: var(--revertix-primary);
 }
 
+/* Remote destinations previewed in the free plugin (Revertix PRO). */
+.revertix-storage-provider--locked {
+	cursor: pointer;
+	opacity: 0.8;
+	transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.revertix-storage-provider--locked:hover,
+.revertix-storage-provider--locked:focus-visible {
+	opacity: 1;
+	border-color: var(--revertix-primary);
+}
+
+.revertix-storage-provider--locked .dashicons:first-child {
+	color: var(--revertix-muted);
+}
+
+.revertix-storage-lock {
+	color: var(--revertix-muted);
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
 /* "Pro" upgrade pill — warm gold so it reads as premium, not an error. */
 .revertix-upgrade-tag {
 	font-size: 10px;
@@ -2670,6 +2694,119 @@
 	opacity: 1;
 }
 
+/* WordPress core panel (above the plugins & themes split). */
+.revertix-rb-corebox {
+	margin: 6px 0 20px;
+	border: 1px solid var(--revertix-border);
+	border-radius: 10px;
+	background: var(--revertix-surface);
+}
+
+.revertix-rb-corebox__head {
+	cursor: pointer;
+	user-select: none;
+	border-radius: 10px;
+	transition: background 0.15s ease;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 14px 16px;
+}
+
+.revertix-rb-corebox__logo {
+	font-size: 36px;
+	width: 36px;
+	height: 36px;
+	color: var(--revertix-text);
+}
+
+.revertix-rb-corebox__title {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.revertix-rb-corebox__title h3 {
+	margin: 0 0 2px;
+	font-size: 15px;
+	color: var(--revertix-text);
+}
+
+.revertix-rb-corebox__meta {
+	font-size: 12px;
+	color: var(--revertix-muted);
+}
+
+.revertix-rb-corebox__status {
+	margin-left: 8px;
+}
+
+.revertix-rb-corebox__status.is-warn {
+	color: #f0b429;
+}
+
+.revertix-rb-corebox__head:hover {
+	background: var(--revertix-surface-2);
+}
+
+.revertix-rb-corebox.is-open .revertix-rb-corebox__head {
+	border-radius: 10px 10px 0 0;
+}
+
+/* Looks like a button so it reads as clickable; the whole row is the target. */
+.revertix-rb-corebox__action {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px 6px 14px;
+	border: 1px solid var(--revertix-border);
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--revertix-muted);
+	transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.revertix-rb-corebox__head:hover .revertix-rb-corebox__action,
+.revertix-rb-corebox__head:focus-visible .revertix-rb-corebox__action,
+.revertix-rb-corebox.is-open .revertix-rb-corebox__action {
+	color: var(--revertix-text);
+	border-color: var(--revertix-primary);
+}
+
+.revertix-rb-corebox__head:focus-visible {
+	outline: 2px solid var(--revertix-primary);
+	outline-offset: -2px;
+	border-radius: 10px;
+}
+
+.revertix-rb-corebox__chev {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	transition: transform 0.2s ease;
+}
+
+.revertix-rb-corebox.is-open .revertix-rb-corebox__chev {
+	transform: rotate(180deg);
+}
+
+.revertix-rb-corebox__body {
+	padding: 4px 16px 16px;
+	border-top: 1px solid var(--revertix-border);
+}
+
+.revertix-rb-corebox__note {
+	font-size: 12px;
+	margin-bottom: 0;
+}
+
+.revertix-rb-heading {
+	margin: 0 0 8px;
+	font-size: 14px;
+	color: var(--revertix-text);
+}
+
 /* Right: detail / preview ------------------------------------------ */
 .revertix-rb-detail {
 	flex: 1 1 auto;
@@ -2896,6 +3033,33 @@
 
 .revertix-rb-ver__tag--installed {
 	color: var(--revertix-muted);
+}
+
+.revertix-rb-ver__tag--insecure {
+	margin-left: 6px;
+	color: var(--revertix-danger);
+}
+
+/* WordPress core: auto-update hold notice + "stay on this version" option. */
+.revertix-rb-pin {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.revertix-rb-pin-opt {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 12px 0;
+	color: var(--revertix-text);
+	cursor: pointer;
+}
+
+.revertix-rb-pin-opt input {
+	margin-top: 2px;
 }
 
 /* The currently-installed version: shown for reference, not selectable. */

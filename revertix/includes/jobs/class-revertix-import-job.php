@@ -809,7 +809,19 @@ GUARD;
 		}
 
 		$old = $root . '.revertix-core-old/';
-		wp_mkdir_p( $old );
+		Revertix_Filesystem::mkdir_p( $old );
+
+		// Make sure the new folders are reachable by the web server before they
+		// go live. The very next tick of this job is served through
+		// wp-admin/admin-ajax.php, so a wp-admin the server cannot enter (0750 on
+		// cPanel) would strand the import here and lock everyone out of the admin.
+		$perms_before = array();
+		foreach ( array( 'wp-includes', 'wp-admin' ) as $dir ) {
+			$perms_before[ $dir ] = self::perms_of( $root . $dir );
+			if ( is_dir( $stage . $dir ) ) {
+				$this->fix_stage_dir_perms( $stage . $dir );
+			}
+		}
 
 		$this->start_maintenance();
 
@@ -874,13 +886,63 @@ GUARD;
 		Revertix_Log::info(
 			'Replaced WordPress with the copy from the package.',
 			array(
-				'files'      => $swapped,
-				'package_wp' => ! empty( $this->state['data']['wp_mismatch'] ) ? $this->state['data']['wp_mismatch'] : get_bloginfo( 'version' ),
+				'files'           => $swapped,
+				'package_wp'      => ! empty( $this->state['data']['wp_mismatch'] ) ? $this->state['data']['wp_mismatch'] : get_bloginfo( 'version' ),
+				'dir_perms'       => decoct( Revertix_Filesystem::dir_perms() ),
+				'old_wp_includes' => $perms_before['wp-includes'],
+				'old_wp_admin'    => $perms_before['wp-admin'],
+				'new_wp_includes' => self::perms_of( $root . 'wp-includes' ),
+				'new_wp_admin'    => self::perms_of( $root . 'wp-admin' ),
 			)
 		);
 
 		$this->state['message'] = __( 'Finishing up…', 'revertix' );
 		$this->advance_stage();
+	}
+
+	/**
+	 * Give a staged folder and every folder inside it dir_perms().
+	 *
+	 * Files are already right: copy_file() set them as it wrote them. This is a
+	 * safety net for folders, since rename() carries their permissions over.
+	 *
+	 * @param string $path Absolute path of the staged folder.
+	 */
+	protected function fix_stage_dir_perms( $path ) {
+		$perms = Revertix_Filesystem::dir_perms();
+
+		@chmod( $path, $perms ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
+
+		try {
+			$items = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $path, FilesystemIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::SELF_FIRST
+			);
+			foreach ( $items as $item ) {
+				if ( $item->isDir() && ! $item->isLink() ) {
+					@chmod( $item->getPathname(), $perms ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
+				}
+			}
+		} catch ( Exception $e ) {
+			Revertix_Log::warning(
+				'Could not check folder permissions in the new WordPress.',
+				array(
+					'path'  => $path,
+					'error' => $e->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Octal permissions of a path, for the log.
+	 *
+	 * @param string $path Absolute path.
+	 * @return string
+	 */
+	protected static function perms_of( $path ) {
+		$perms = @fileperms( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+		return ( false === $perms ) ? 'n/a' : decoct( $perms & 0777 );
 	}
 
 	/* ---------------------------------------------------------------------

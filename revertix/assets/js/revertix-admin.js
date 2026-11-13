@@ -1766,8 +1766,14 @@
 			if ( ! row ) {
 				return;
 			}
+			this.restoreId( row.getAttribute( 'data-id' ) );
+		},
+
+		// Safety backup, then restore. Also used by Revertix PRO (via
+		// window.Revertix.restoreBackup) to restore a backup fetched from
+		// remote storage.
+		restoreId: function ( id ) {
 			var self = this;
-			var id = row.getAttribute( 'data-id' );
 
 			UI.confirm( i18n.confirmRestore, { danger: true, okLabel: i18n.restore } ).then( function ( ok ) {
 				if ( ! ok ) {
@@ -2047,6 +2053,45 @@
 					self.filter( filter.value );
 				} );
 			}
+	
+			this.initCore();
+		},
+
+		/* --- WordPress core panel ------------------------------------- */
+
+		initCore: function () {
+			var self = this;
+			this.corebox = el( 'revertix-rb-corebox' );
+			if ( ! this.corebox ) {
+				return;
+			}
+			var head = this.corebox.querySelector( '.revertix-rb-corebox__head' );
+			var body = this.corebox.querySelector( '.revertix-rb-corebox__body' );
+			var loaded = false;
+
+			// A drawer: the header row opens and closes it; closed by default.
+			function toggle() {
+				var open = body.hidden;
+				body.hidden = ! open;
+				head.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+				self.corebox.classList.toggle( 'is-open', open );
+				var label = head.querySelector( '.revertix-rb-corebox__label' );
+				if ( label ) {
+					label.textContent = label.getAttribute( open ? 'data-open' : 'data-closed' );
+				}
+				if ( open && ! loaded ) {
+					loaded = true;
+					self.loadCore( body );
+				}
+			}
+
+			head.addEventListener( 'click', toggle );
+			head.addEventListener( 'keydown', function ( e ) {
+				if ( e.key === 'Enter' || e.key === ' ' ) {
+					e.preventDefault();
+					toggle();
+				}
+			} );
 		},
 
 		// Show the dashicon placeholder when an icon fails to load. Also covers the
@@ -2093,7 +2138,7 @@
 
 		filter: function ( q ) {
 			q = ( q || '' ).toLowerCase();
-			this.root.querySelectorAll( '.revertix-rb-row' ).forEach( function ( row ) {
+			this.root.querySelectorAll( '.revertix-rb-list__group .revertix-rb-row' ).forEach( function ( row ) {
 				var name = ( row.getAttribute( 'data-name' ) || '' ).toLowerCase();
 				row.style.display = ( ! q || name.indexOf( q ) !== -1 ) ? '' : 'none';
 			} );
@@ -2263,6 +2308,166 @@
 			}
 		},
 
+		loadCore: function ( body ) {
+			var self = this;
+			body.innerHTML = '';
+			body.appendChild( this.make( 'p', 'revertix-hint', i18n.rbLoading ) );
+			post( 'revertix_core_versions', {} ).then( function ( res ) {
+				if ( ! res || ! res.success ) {
+					body.innerHTML = '';
+					body.appendChild( self.make( 'p', 'revertix-hint revertix-hint--error', ( res && res.data && res.data.message ) || i18n.failed ) );
+					return;
+				}
+				self.renderCore( body, res.data );
+			} ).catch( function ( err ) {
+				body.innerHTML = '';
+				body.appendChild( self.make( 'p', 'revertix-hint revertix-hint--error', ( err && err.message ) || i18n.failed ) );
+			} );
+		},
+
+		renderCore: function ( body, data ) {
+			var self = this;
+			body.innerHTML = '';
+
+			if ( data.pinned && data.pinned === data.current ) {
+				var pinBox = this.make( 'div', 'revertix-hint revertix-hint--warn revertix-rb-pin' );
+				pinBox.appendChild( this.make( 'span', null, ( i18n.coreHeld || '' ).replace( '%s', data.current ) ) );
+				var resume = this.make( 'button', 'revertix-btn revertix-btn--sm', i18n.coreResume );
+				resume.type = 'button';
+				resume.addEventListener( 'click', function () {
+					resume.disabled = true;
+					post( 'revertix_core_unpin', {} ).then( function ( res ) {
+						if ( ! res || ! res.success ) {
+							UI.toast( ( res && res.data && res.data.message ) || i18n.failed, 'error' );
+							resume.disabled = false;
+							return;
+						}
+						UI.toast( res.data.message, 'success' );
+						pinBox.remove();
+						var held = self.corebox.querySelector( '.revertix-rb-corebox__status.is-warn' );
+						if ( held ) {
+							held.remove();
+						}
+					} ).catch( function ( err ) {
+						UI.toast( ( err && err.message ) || i18n.failed, 'error' );
+						resume.disabled = false;
+					} );
+				} );
+				pinBox.appendChild( resume );
+				body.appendChild( pinBox );
+			}
+
+			if ( data.blocker ) {
+				body.appendChild( this.make( 'p', 'revertix-hint revertix-hint--error', data.blocker ) );
+				return;
+			}
+
+			body.appendChild( this.make( 'p', 'revertix-hint', i18n.coreIntro ) );
+
+			// Version list with radio-style rows, same as for plugins & themes.
+			body.appendChild( this.make( 'div', 'revertix-rb-detail__label', i18n.rbVersions || 'Versions' ) );
+
+			var selected = null;
+			var applyBtn = this.make( 'button', 'revertix-btn revertix-btn--primary revertix-rb-apply', i18n.rbApply || 'Select a version' );
+			applyBtn.type = 'button';
+			applyBtn.disabled = true;
+
+			var warn = this.make( 'p', 'revertix-hint revertix-hint--warn', i18n.coreConfirmInsecure );
+			warn.hidden = true;
+
+			var vList = this.make( 'div', 'revertix-rb-vlist' );
+			data.versions.forEach( function ( v ) {
+				var rowEl = self.make( 'button', 'revertix-rb-vrow' );
+				rowEl.type = 'button';
+
+				var left = self.make( 'span', 'revertix-rb-vrow__main' );
+				left.appendChild( self.make( 'span', 'revertix-rb-vrow__dot' ) );
+				left.appendChild( self.make( 'span', 'revertix-rb-vrow__ver', 'v' + v.version ) );
+				if ( v.installed ) {
+					left.appendChild( self.make( 'span', 'revertix-rb-ver__tag', i18n.rbInstalled || 'installed' ) );
+				} else if ( v.latest ) {
+					left.appendChild( self.make( 'span', 'revertix-rb-ver__tag', i18n.rbLatest ) );
+				}
+				if ( v.insecure ) {
+					left.appendChild( self.make( 'span', 'revertix-rb-ver__tag revertix-rb-ver__tag--insecure', i18n.coreInsecure ) );
+				}
+				rowEl.appendChild( left );
+
+				if ( v.installed || ! v.allowed ) {
+					// The installed version stays as a "you are here" marker.
+					rowEl.classList.add( 'is-installed' );
+					if ( v.installed ) {
+						rowEl.classList.add( 'is-selected' );
+					}
+					rowEl.disabled = true;
+				} else {
+					rowEl.addEventListener( 'click', function () {
+						vList.querySelectorAll( '.revertix-rb-vrow.is-selected' ).forEach( function ( r ) {
+							r.classList.remove( 'is-selected' );
+						} );
+						rowEl.classList.add( 'is-selected' );
+						selected = v;
+						applyBtn.disabled = false;
+						applyBtn.textContent = ( i18n.rbSwitch || 'Switch to' ) + ' v' + v.version;
+						warn.hidden = ! v.insecure;
+					} );
+				}
+				vList.appendChild( rowEl );
+			} );
+			body.appendChild( vList );
+			body.appendChild( warn );
+
+			var pinLabel = this.make( 'label', 'revertix-rb-pin-opt' );
+			var pinInput = document.createElement( 'input' );
+			pinInput.type = 'checkbox';
+			pinInput.checked = true;
+			pinLabel.appendChild( pinInput );
+			pinLabel.appendChild( this.make( 'span', null, i18n.corePin ) );
+			body.appendChild( pinLabel );
+
+			var minKey = data.minWhy === 'php' ? 'coreMinPhp' : 'coreMinRevertix';
+			body.appendChild( this.make( 'p', 'revertix-hint revertix-rb-corebox__note',
+				( i18n[ minKey ] || '' ).replace( '%1$s', data.minimum ).replace( '%2$s', data.php ) ) );
+
+			applyBtn.addEventListener( 'click', function () {
+				if ( selected ) {
+					self.runCore( selected, pinInput.checked );
+				}
+			} );
+			body.appendChild( applyBtn );
+		},
+
+		runCore: function ( v, pin ) {
+			var msg = ( i18n.coreConfirm || '' ).replace( '%s', v.version );
+			if ( v.insecure ) {
+				msg += ' ' + i18n.coreConfirmInsecure;
+			}
+
+			UI.confirm( msg, { danger: true } ).then( function ( ok ) {
+				if ( ! ok ) {
+					return;
+				}
+				UI.toast( i18n.coreSwitching, 'info' );
+				post( 'revertix_core_run', {
+					version: v.version,
+					pin: pin ? '1' : '0'
+				} ).then( function ( res ) {
+					if ( ! res || ! res.success ) {
+						UI.toast( ( res && res.data && res.data.message ) || i18n.failed, 'error' );
+						return;
+					}
+					UI.toast( ( res.data && res.data.message ) || i18n.rbDone, 'success' );
+					// The admin may need WordPress' database step for the new
+					// version first; a plain reload lets WordPress route there.
+					setTimeout( function () {
+						window.location.reload();
+					}, 1600 );
+				} ).catch( function ( err ) {
+					UI.toast( ( err && err.message ) || i18n.failed, 'error' );
+				} );
+			} );
+		},
+
 		buildSnapshots: function ( row, snaps ) {
 			var self = this;
 			var wrap = this.make( 'div', 'revertix-rb-snaps' );
@@ -2362,4 +2567,17 @@
 		Settings.init();
 		Rollback.init();
 	} );
+
+	// Small public surface for the Revertix PRO add-on.
+	window.Revertix = window.Revertix || {};
+	window.Revertix.restoreBackup = function ( id ) {
+		Backups.restoreId( id );
+	};
+	window.Revertix.toast = function ( message, type ) {
+		UI.toast( message, type );
+	};
+	// Promise<bool>, styled like the rest of Revertix (never the browser dialog).
+	window.Revertix.confirm = function ( message, opts ) {
+		return UI.confirm( message, opts || {} );
+	};
 } )();

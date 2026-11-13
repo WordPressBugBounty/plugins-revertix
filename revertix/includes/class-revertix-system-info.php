@@ -315,6 +315,10 @@ class Revertix_System_Info {
 				array( 'UPLOAD_PATH', self::const_str( 'UPLOAD_PATH' ) ),
 				array( 'FS_CHMOD_DIR', defined( 'FS_CHMOD_DIR' ) ? decoct( FS_CHMOD_DIR ) : 'not set' ),
 				array( 'FS_CHMOD_FILE', defined( 'FS_CHMOD_FILE' ) ? decoct( FS_CHMOD_FILE ) : 'not set' ),
+				array( 'Folder permissions Revertix uses', class_exists( 'Revertix_Filesystem' ) ? decoct( Revertix_Filesystem::dir_perms() ) : 'n/a' ),
+				array( 'File permissions Revertix uses', class_exists( 'Revertix_Filesystem' ) ? decoct( Revertix_Filesystem::file_perms() ) : 'n/a' ),
+				array( 'wp-admin permissions', self::file_perms( ABSPATH . 'wp-admin' ) ),
+				array( 'wp-includes permissions', self::file_perms( ABSPATH . WPINC ) ),
 			),
 		);
 	}

@@ -172,7 +172,7 @@ class Revertix_Staging_Job extends Revertix_Job {
 	 * Walk the live root in chunks, listing files to copy.
 	 */
 	protected function step_index_files() {
-		wp_mkdir_p( $this->state['data']['staging_dir'] );
+		Revertix_Filesystem::mkdir_p( $this->state['data']['staging_dir'] );
 
 		$index_path = $this->dir() . 'files-index.txt';
 		$fh         = fopen( $index_path, 'a' ); // phpcs:ignore WordPress.WP.AlternativeFunctions

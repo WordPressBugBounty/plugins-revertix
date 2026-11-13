@@ -49,6 +49,9 @@ class Revertix_Ajax {
 		add_action( 'wp_ajax_revertix_save_settings', array( $this, 'save_settings' ) );
 		add_action( 'wp_ajax_revertix_rollback_versions', array( $this, 'rollback_versions' ) );
 		add_action( 'wp_ajax_revertix_rollback_run', array( $this, 'rollback_run' ) );
+		add_action( 'wp_ajax_revertix_core_versions', array( $this, 'core_versions' ) );
+		add_action( 'wp_ajax_revertix_core_run', array( $this, 'core_run' ) );
+		add_action( 'wp_ajax_revertix_core_unpin', array( $this, 'core_unpin' ) );
 
 		// Binary downloads are served through admin-post (they stream a file).
 		add_action( 'admin_post_revertix_download', array( $this, 'download' ) );
@@ -825,6 +828,83 @@ class Revertix_Ajax {
 		}
 
 		wp_send_json_success( array( 'message' => $result['message'] ) );
+	}
+
+	/**
+	 * Versions WordPress itself can be switched to.
+	 */
+	public function core_versions() {
+		$this->guard_ajax();
+
+		$current  = Revertix_Core_Rollback::installed_version();
+		$versions = Revertix_Core_Rollback::versions( $current );
+
+		if ( null === $versions ) {
+			wp_send_json_error( array( 'message' => __( 'Could not load the list of WordPress versions from WordPress.org. Please try again later.', 'revertix' ) ) );
+		}
+
+		$min = Revertix_Core_Rollback::minimum();
+
+		wp_send_json_success(
+			array(
+				'current'  => $current,
+				'versions' => $versions,
+				'pinned'   => Revertix_Core_Rollback::pinned(),
+				'blocker'  => Revertix_Core_Rollback::blocker(),
+				'minimum'  => $min['version'],
+				'minWhy'   => $min['reason'],
+				'php'      => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
+			)
+		);
+	}
+
+	/**
+	 * Switch WordPress to another released version.
+	 */
+	public function core_run() {
+		$this->guard_ajax();
+
+		$blocker = Revertix_Core_Rollback::blocker();
+		if ( '' !== $blocker ) {
+			wp_send_json_error( array( 'message' => $blocker ), 403 );
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- nonce checked in guard_ajax().
+		$version = isset( $_POST['version'] ) ? preg_replace( '/[^0-9.]/', '', sanitize_text_field( wp_unslash( $_POST['version'] ) ) ) : '';
+		$pin     = ! empty( $_POST['pin'] ) && '0' !== $_POST['pin'];
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		$current = Revertix_Core_Rollback::installed_version();
+		if ( '' === $version || ! Revertix_Core_Rollback::can_switch_to( $version, $current ) ) {
+			wp_send_json_error( array( 'message' => __( 'That WordPress version isn’t available for this site.', 'revertix' ) ) );
+		}
+
+		/**
+		 * Fires just before WordPress itself is switched to another version.
+		 *
+		 * @param string $current Installed version.
+		 * @param string $version Target version.
+		 */
+		do_action( 'revertix_before_core_rollback', $current, $version );
+
+		$result = Revertix_Core_Rollback::run( $version, $pin );
+
+		if ( empty( $result['ok'] ) ) {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
+		}
+
+		wp_send_json_success( array( 'message' => $result['message'] ) );
+	}
+
+	/**
+	 * Let WordPress update itself automatically again.
+	 */
+	public function core_unpin() {
+		$this->guard_ajax();
+
+		Revertix_Core_Rollback::unpin();
+
+		wp_send_json_success( array( 'message' => __( 'Automatic WordPress updates are back on.', 'revertix' ) ) );
 	}
 
 	/**

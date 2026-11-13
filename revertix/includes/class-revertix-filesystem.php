@@ -924,7 +924,97 @@ class Revertix_Filesystem {
 	}
 
 	/**
+	 * Permissions for a folder Revertix creates inside the site.
+	 *
+	 * wp_mkdir_p() gives a new folder the permissions of its parent. On cPanel the
+	 * site root is often 0750 with the web server's group, which a new folder does
+	 * not inherit - so a fresh wp-admin at 0750 answers every request with a 403.
+	 * WordPress avoids this by never going below 0755 (FS_CHMOD_DIR in
+	 * wp-admin/includes/file.php), and so does this.
+	 *
+	 * @return int
+	 */
+	public static function dir_perms() {
+		static $perms = null;
+
+		if ( null === $perms ) {
+			if ( defined( 'FS_CHMOD_DIR' ) ) {
+				$perms = (int) FS_CHMOD_DIR;
+			} else {
+				$base  = @fileperms( ABSPATH ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+				$perms = ( false === $base ) ? 0755 : ( ( $base & 0777 ) | 0755 );
+			}
+		}
+
+		return $perms;
+	}
+
+	/**
+	 * Permissions for a file Revertix writes inside the site (FS_CHMOD_FILE rule).
+	 *
+	 * @return int
+	 */
+	public static function file_perms() {
+		static $perms = null;
+
+		if ( null === $perms ) {
+			if ( defined( 'FS_CHMOD_FILE' ) ) {
+				$perms = (int) FS_CHMOD_FILE;
+			} else {
+				$base  = @fileperms( ABSPATH . 'index.php' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors
+				$perms = ( false === $base ) ? 0644 : ( ( $base & 0777 ) | 0644 );
+			}
+		}
+
+		return $perms;
+	}
+
+	/**
+	 * Create a folder and any missing parents, with dir_perms() on each new one.
+	 *
+	 * Only the folders this call creates are chmod-ed; folders that already
+	 * existed keep whatever permissions their owner gave them.
+	 *
+	 * @param string $dir Absolute path.
+	 * @return bool
+	 */
+	public static function mkdir_p( $dir ) {
+		$dir = rtrim( $dir, '/\\' );
+
+		if ( '' === $dir || is_dir( $dir ) ) {
+			return '' !== $dir;
+		}
+
+		// Walk up to the first folder that exists, remembering what is missing.
+		$missing = array();
+		$path    = $dir;
+		while ( '' !== $path && ! is_dir( $path ) ) {
+			$missing[] = $path;
+			$parent    = dirname( $path );
+			if ( $parent === $path ) {
+				break;
+			}
+			$path = $parent;
+		}
+
+		if ( ! wp_mkdir_p( $dir ) ) {
+			return false;
+		}
+
+		$perms = self::dir_perms();
+		foreach ( array_reverse( $missing ) as $created ) {
+			@chmod( $created, $perms ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
+		}
+
+		return true;
+	}
+
+	/**
 	 * Copy a single file, creating its parent directory. Overwrites the target.
+	 *
+	 * New folders get dir_perms() and the file gets file_perms(), as core's
+	 * copy_dir() does, so whatever Revertix puts in the site is reachable by the
+	 * web server regardless of how strict the site root is.
 	 *
 	 * @param string $source Absolute source path.
 	 * @param string $dest   Absolute destination path.
@@ -933,11 +1023,12 @@ class Revertix_Filesystem {
 	public static function copy_file( $source, $dest ) {
 		$dir = dirname( $dest );
 		if ( ! is_dir( $dir ) ) {
-			wp_mkdir_p( $dir );
+			self::mkdir_p( $dir );
 		}
 
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors
 		if ( @copy( $source, $dest ) ) {
+			@chmod( $dest, self::file_perms() ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
 			return true;
 		}
 
@@ -945,7 +1036,7 @@ class Revertix_Filesystem {
 		// a leftover .git object at 0444). Make it writable and retry.
 		if ( file_exists( $dest ) ) {
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors
-			@chmod( $dest, 0644 );
+			@chmod( $dest, self::file_perms() );
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors
 			if ( @copy( $source, $dest ) ) {
 				return true;
@@ -953,7 +1044,10 @@ class Revertix_Filesystem {
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors
 			@unlink( $dest );
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors
-			return @copy( $source, $dest );
+			if ( @copy( $source, $dest ) ) {
+				@chmod( $dest, self::file_perms() ); // phpcs:ignore WordPress.PHP.NoSilencedErrors, WordPress.WP.AlternativeFunctions
+				return true;
+			}
 		}
 
 		return false;

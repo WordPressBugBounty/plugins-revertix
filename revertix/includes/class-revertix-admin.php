@@ -364,6 +364,20 @@ class Revertix_Admin {
 					'rbNoSnapshots' => __( 'No snapshots yet.', 'revertix' ),
 										'rbCustomTag'   => __( 'Premium / custom', 'revertix' ),
 					'rbCustomPro'   => __( 'This item isn’t in the WordPress.org directory, so there’s no public version history. Snapshot the current version below to be able to roll back to it later.', 'revertix' ),
+					/* translators: %s: WordPress version. */
+					'coreHeld'      => __( 'Automatic WordPress updates are on hold, so this site stays on version %s.', 'revertix' ),
+					'coreResume'    => __( 'Resume automatic updates', 'revertix' ),
+					'coreIntro'     => __( 'Switch WordPress to another released version. Your content, plugins, themes and uploads are not touched. Take a backup first.', 'revertix' ),
+					'coreInsecure'  => __( 'not secure', 'revertix' ),
+					/* translators: 1: WordPress version, 2: PHP version. */
+					'coreMinPhp'    => __( 'Versions older than %1$s are not listed: they do not support PHP %2$s, which this server runs.', 'revertix' ),
+					/* translators: 1: WordPress version, 2: PHP version (unused). */
+					'coreMinRevertix' => __( 'Versions older than %1$s are not listed: Revertix needs at least that version, so you could not switch back from here.', 'revertix' ),
+					'corePin'       => __( 'Stay on this version: pause automatic WordPress updates until I resume them or update by hand.', 'revertix' ),
+					/* translators: %s: WordPress version. */
+					'coreConfirm'   => __( 'Switch WordPress to version %s? The site goes into maintenance mode for a minute while the files are replaced. Plugins or themes that need a newer WordPress may stop working.', 'revertix' ),
+					'coreConfirmInsecure' => __( 'This version has known security issues that are fixed in later releases.', 'revertix' ),
+					'coreSwitching' => __( 'Switching WordPress version… this can take a minute.', 'revertix' ),
 					'rbCustomFree'  => __( 'This looks like a premium/custom plugin or theme - it isn’t in the WordPress.org directory, so there’s no public version history to roll back to. Snapshots for premium/custom items are available in the separate Revertix PRO add-on.', 'revertix' ),
 				),
 			)

@@ -3,7 +3,7 @@
  * Plugin Name:       Revertix
  * Plugin URI:        https://nitramix.com/projects/revertix
  * Description:       Staging, backup and migration for WordPress. Export/import your whole site, create a staging copy, and take manual backups - all processed in resumable chunks so large sites never hit a PHP timeout.
- * Version:           1.0.2
+ * Version:           1.0.3
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            Nitramix, Martin Valchev
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Constants - single source of truth for paths, version and the upgrade URL.
  * ---------------------------------------------------------------------------
  */
-define( 'REVERTIX_VERSION', '1.0.2' );
+define( 'REVERTIX_VERSION', '1.0.3' );
 
 // Package format version. Bump only when the package/manifest layout changes.
 define( 'REVERTIX_PACKAGE_FORMAT', 1 );
@@ -84,6 +84,7 @@ require_once REVERTIX_PLUGIN_DIR . 'includes/class-revertix-backup.php';
 require_once REVERTIX_PLUGIN_DIR . 'includes/class-revertix-share.php';
 require_once REVERTIX_PLUGIN_DIR . 'includes/class-revertix-rollback.php';
 require_once REVERTIX_PLUGIN_DIR . 'includes/class-revertix-rollback-runner.php';
+require_once REVERTIX_PLUGIN_DIR . 'includes/class-revertix-core-rollback.php';
 require_once REVERTIX_PLUGIN_DIR . 'includes/class-revertix-staging.php';
 require_once REVERTIX_PLUGIN_DIR . 'includes/class-revertix-job.php';
 require_once REVERTIX_PLUGIN_DIR . 'includes/jobs/class-revertix-export-job.php';

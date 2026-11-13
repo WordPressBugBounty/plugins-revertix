@@ -19,6 +19,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 $is_premium = revertix_is_premium();
 $plugins    = Revertix_Rollback::plugins();
 $themes     = Revertix_Rollback::themes();
+$core       = array(
+	'type'    => 'core',
+	'id'      => 'wordpress',
+	'slug'    => 'wordpress',
+	'name'    => 'WordPress',
+	'author'  => 'WordPress.org',
+	'version' => Revertix_Core_Rollback::installed_version(),
+	'icon'    => '',
+	'active'  => false,
+);
+
+// One-line status under the WordPress card.
+$core_status = '';
+$core_tone   = '';
+if ( '' !== Revertix_Core_Rollback::pinned() && Revertix_Core_Rollback::pinned() === $core['version'] ) {
+	$core_status = __( 'Automatic updates on hold', 'revertix' );
+	$core_tone   = 'warn';
+} else {
+	$core_updates = get_site_transient( 'update_core' );
+	if ( is_object( $core_updates ) && ! empty( $core_updates->updates ) ) {
+		$core_newest = '';
+		foreach ( (array) $core_updates->updates as $core_offer ) {
+			if ( isset( $core_offer->response, $core_offer->current ) && 'upgrade' === $core_offer->response && version_compare( $core_offer->current, $core_newest, '>' ) ) {
+				$core_newest = $core_offer->current;
+			}
+		}
+		if ( '' !== $core_newest && version_compare( $core_newest, $core['version'], '>' ) ) {
+			/* translators: %s: WordPress version. */
+			$core_status = sprintf( __( 'Update available: %s', 'revertix' ), $core_newest );
+		} else {
+			$core_status = __( 'Up to date', 'revertix' );
+		}
+	}
+}
 
 /**
  * Render one list row.
@@ -66,9 +100,31 @@ $render_row = static function ( $item, $fallback_ic ) {
 	<?php if ( ! $is_premium ) : ?>
 		<p class="revertix-hint">
 			<span class="dashicons dashicons-info"></span>
-			<?php esc_html_e( 'Roll any plugin or theme back to any earlier WordPress.org version. Snapshots of premium/custom plugins & themes (which have no public version history) are available in the separate Revertix PRO add-on.', 'revertix' ); ?>
+			<?php esc_html_e( 'Roll any plugin, theme or WordPress itself back to any earlier WordPress.org version. Snapshots of premium/custom plugins & themes (which have no public version history) are available in the separate Revertix PRO add-on.', 'revertix' ); ?>
 		</p>
 	<?php endif; ?>
+
+	<section class="revertix-rb-corebox" id="revertix-rb-corebox" data-version="<?php echo esc_attr( $core['version'] ); ?>">
+		<div class="revertix-rb-corebox__head" role="button" tabindex="0" aria-expanded="false" aria-controls="revertix-rb-corebox-body">
+			<span class="revertix-rb-corebox__logo dashicons dashicons-wordpress"></span>
+			<div class="revertix-rb-corebox__title">
+				<h3><?php esc_html_e( 'WordPress', 'revertix' ); ?></h3>
+				<div class="revertix-rb-corebox__meta">
+					<span class="revertix-rb-corebox__ver"><?php echo esc_html( 'v' . $core['version'] ); ?></span>
+					<?php if ( '' !== $core_status ) : ?>
+						<span class="revertix-rb-corebox__status<?php echo 'warn' === $core_tone ? ' is-warn' : ''; ?>"><?php echo esc_html( $core_status ); ?></span>
+					<?php endif; ?>
+				</div>
+			</div>
+			<span class="revertix-rb-corebox__action">
+				<span class="revertix-rb-corebox__label" data-open="<?php esc_attr_e( 'Hide versions', 'revertix' ); ?>" data-closed="<?php esc_attr_e( 'Change version', 'revertix' ); ?>"><?php esc_html_e( 'Change version', 'revertix' ); ?></span>
+				<span class="revertix-rb-corebox__chev dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+			</span>
+		</div>
+		<div class="revertix-rb-corebox__body" id="revertix-rb-corebox-body" hidden></div>
+	</section>
+
+	<h3 class="revertix-rb-heading"><?php esc_html_e( 'Plugins & themes', 'revertix' ); ?></h3>
 
 	<div class="revertix-rb-split">
 

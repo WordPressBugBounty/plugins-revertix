@@ -103,11 +103,40 @@ $date_fmt  = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 		<div class="revertix-storage-providers">
 			<span class="revertix-field__label"><?php esc_html_e( 'Storage', 'revertix' ); ?></span>
 			<div class="revertix-storage-grid">
-				<div class="revertix-storage-provider is-active" title="<?php esc_attr_e( 'Backups are saved on this server. More storage options coming soon.', 'revertix' ); ?>">
+				<div class="revertix-storage-provider is-active" title="<?php esc_attr_e( 'Backups are always saved on this server first.', 'revertix' ); ?>">
 					<span class="dashicons dashicons-database"></span>
 					<span class="revertix-storage-provider__label"><?php esc_html_e( 'Local storage', 'revertix' ); ?></span>
 					<span class="dashicons dashicons-yes-alt revertix-storage-check"></span>
 				</div>
+
+				<?php if ( Revertix_Locked_Feature::is_unlocked( 'remote_storage' ) && has_action( 'revertix_pro_render_storage_tiles' ) ) : ?>
+					<?php
+					/**
+					 * Render the live remote-storage tiles (Revertix PRO).
+					 */
+					do_action( 'revertix_pro_render_storage_tiles' );
+					?>
+				<?php else : ?>
+					<?php
+					/*
+					 * Remote storage is provided by the separate Revertix PRO
+					 * add-on. Presentational teasers only: clicking opens the
+					 * pricing modal; nothing here talks to an external service.
+					 */
+					?>
+					<div class="revertix-storage-provider revertix-storage-provider--locked" role="button" tabindex="0" data-revertix-locked="remote_storage">
+						<span class="dashicons dashicons-cloud"></span>
+						<span class="revertix-storage-provider__label"><?php esc_html_e( 'Google Drive', 'revertix' ); ?></span>
+						<span class="revertix-badge revertix-badge--pro"><?php esc_html_e( 'PRO', 'revertix' ); ?></span>
+						<span class="dashicons dashicons-lock revertix-storage-lock" aria-hidden="true"></span>
+					</div>
+					<div class="revertix-storage-provider revertix-storage-provider--locked" role="button" tabindex="0" data-revertix-locked="remote_storage">
+						<span class="dashicons dashicons-networking"></span>
+						<span class="revertix-storage-provider__label"><?php esc_html_e( 'FTP / SFTP server', 'revertix' ); ?></span>
+						<span class="revertix-badge revertix-badge--pro"><?php esc_html_e( 'PRO', 'revertix' ); ?></span>
+						<span class="dashicons dashicons-lock revertix-storage-lock" aria-hidden="true"></span>
+					</div>
+				<?php endif; ?>
 			</div>
 		</div>
 
@@ -177,6 +206,14 @@ $date_fmt  = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 								)
 							);
 							?>
+							<?php
+							/**
+							 * Extra status for one backup row (e.g. remote copies, Revertix PRO).
+							 *
+							 * @param array $backup Backup entry.
+							 */
+							do_action( 'revertix_backup_item_status', $backup );
+							?>
 						</span>
 					</div>
 					<div class="revertix-package__actions">
@@ -205,6 +242,14 @@ $date_fmt  = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 				</div>
 			<?php endforeach; ?>
 		</div>
+
+		<?php
+		/**
+		 * Fires after the list of local backups (e.g. backups kept in remote
+		 * storage, Revertix PRO).
+		 */
+		do_action( 'revertix_backups_after_list' );
+		?>
 		</div><!-- /.revertix-backups__section (your backups) -->
 	</div>
 </section>
@@ -219,6 +264,15 @@ $date_fmt  = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 			'preview' => 'revertix_render_schedule_preview',
 		)
 	);
+
+	Revertix_Locked_Feature::render(
+		array(
+			'feature' => 'remote_storage',
+			'title'   => __( 'Remote storage', 'revertix' ),
+			'desc'    => __( 'Copy every backup automatically to your own Google Drive or FTP/SFTP server, so a copy survives even if this server does not. Provided by the separate Revertix PRO add-on.', 'revertix' ),
+			'preview' => 'revertix_render_remote_preview',
+		)
+	);
 	?>
 </div>
 <?php
@@ -230,6 +284,23 @@ function revertix_render_schedule_preview() {
 	echo '<ul class="revertix-preview-list">';
 	foreach ( $labels as $label ) {
 		echo '<li><span class="dashicons dashicons-clock"></span>' . esc_html( $label ) . '</li>';
+	}
+	echo '</ul>';
+}
+
+/**
+ * Locked-state preview of the remote storage destinations.
+ */
+function revertix_render_remote_preview() {
+	$items = array(
+		'dashicons-cloud'      => __( 'Google Drive - connect your account in one click', 'revertix' ),
+		'dashicons-networking' => __( 'FTP, FTPS or SFTP - your own server', 'revertix' ),
+		'dashicons-trash'      => __( 'Keep the last N copies, optionally remove the local one', 'revertix' ),
+		'dashicons-image-rotate' => __( 'Restore straight from the cloud', 'revertix' ),
+	);
+	echo '<ul class="revertix-preview-list">';
+	foreach ( $items as $icon => $label ) {
+		echo '<li><span class="dashicons ' . esc_attr( $icon ) . '"></span>' . esc_html( $label ) . '</li>';
 	}
 	echo '</ul>';
 }

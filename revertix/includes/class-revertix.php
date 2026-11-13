@@ -60,6 +60,9 @@ final class Revertix {
 		add_action( Revertix_Log::CRON_HOOK, array( 'Revertix_Storage', 'clear_stale_maintenance' ) );
 		Revertix_Log::schedule();
 
+		// Holds automatic core updates while a rolled-back WordPress is pinned.
+		Revertix_Core_Rollback::init();
+
 		$this->ajax = new Revertix_Ajax();
 
 		// Public download links for export packages (front end + admin).

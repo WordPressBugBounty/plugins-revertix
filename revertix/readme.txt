@@ -5,7 +5,7 @@ Tags: backup, migration, staging, clone, restore
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,7 +27,7 @@ Revertix is built to be careful with your data: before any destructive action (l
 *   **Backups** - Take a full backup (database + files) any time. Restore, download, or delete backups from one place. A safety backup of the current site is taken automatically before every restore.
 *   **Export / Import** - Package your entire site (database and files) into a single portable .zip, download it, and import it into another WordPress install to migrate or duplicate your site.
 *   **Share a package** - Hand an export to someone who has no account on your site - a developer, your host's support desk - with a private download link. It lasts seven days, you can see it again or withdraw it whenever you like, and it disappears with the package.
-*   **Rollback** - Roll a plugin or theme back to any earlier WordPress.org version straight from your dashboard, with an automatic safety snapshot taken first.
+*   **Rollback** - Roll a plugin or theme back to any earlier WordPress.org version straight from your dashboard, with an automatic safety snapshot taken first. You can also switch **WordPress itself** to an earlier release (or back up to a newer one) through WordPress' own updater, and pause automatic WordPress updates so the site stays on the version you chose.
 *   **Settings** - Control safety-backup retention, staging access, email notifications, and whether Revertix removes its data on uninstall.
 *   **System Info & Logs** - A built-in environment report and activity log make it easy to see what happened and to share details with support.
 
@@ -47,7 +47,7 @@ Revertix never tries to do everything in a single request. Cloning, backup, expo
 *   Taking a **full site backup** before an update, redesign, or risky change
 *   **Migrating WordPress** to a new host, server, or domain
 *   **Cloning or duplicating** a site to reuse as a starting point or hand to a client
-*   **Rolling back** a plugin or theme when an update breaks your site
+*   **Rolling back** a plugin, a theme or WordPress itself when an update breaks your site
 
 = Looking for more? Revertix PRO =
 
@@ -55,6 +55,7 @@ Revertix never tries to do everything in a single request. Cloning, backup, expo
 
 *   **Push / Pull sync** - Send changes between staging and live safely. Review every changed file and database row (down to a line-by-line diff) and apply only what you pick - or, on smaller plans, sync everything in one click. A full safety backup of live is always taken before a push.
 *   **Scheduled automatic backups** - Set-and-forget backups on the schedule you choose (monthly, weekly, and more), with configurable retention.
+*   **Off-site backups: Google Drive & FTP/SFTP** - Every backup is copied automatically to your own Google Drive (connect in one click) and/or your own FTP, FTPS or SFTP server, with its own retention. Optionally remove the local copy to save disk space, and restore straight from remote storage.
 *   **Snapshots for premium/custom items** - Snapshot plugins and themes that are not on wordpress.org (no public version history) and roll back to any saved snapshot.
 *   **Export download links, controlled** - The free plugin gives every export a private download link. PRO lets you set how long it lives, how many times it may be used, and a password to open it.
 *   **Staging access control** - Decide which users and roles can reach your staging sites, and set a custom staging admin-bar colour.
@@ -128,13 +129,19 @@ Yes. When you import a package (or clone to staging) onto a site with a differen
 Yes. Revertix uses a serialize-safe search-and-replace, so serialized and JSON-encoded values - the kind stored by WooCommerce, page builders like Elementor and Divi, and many theme/plugin settings - keep their correct string lengths and stay valid after the URL is changed.
 
 = Is Revertix a free backup plugin? =
-Yes. Revertix is a free WordPress backup, staging and migration plugin. You can take full backups, create staging sites, roll back plugins and themes, and export/import your site at no cost. The separate Revertix PRO add-on provides scheduled automatic backups, push/pull sync, snapshots for premium/custom items, and staging access control.
+Yes. Revertix is a free WordPress backup, staging and migration plugin. You can take full backups, create staging sites, roll back plugins and themes, and export/import your site at no cost. The separate Revertix PRO add-on provides scheduled automatic backups, off-site backups to Google Drive or FTP/SFTP, push/pull sync, snapshots for premium/custom items, and staging access control.
 
 = Can I roll a plugin or theme back if an update breaks my site? =
 Yes. Under **Revertix > Rollback**, you can roll a plugin or theme back to any earlier WordPress.org version, with a safety snapshot taken first. The separate Revertix PRO add-on adds snapshots for premium/custom items that are not on WordPress.org.
 
+= Can I roll WordPress itself back to an older version? =
+Yes. Open the **WordPress** panel at the top of **Revertix > Rollback**, pick a release and switch. It runs through WordPress' own updater, so maintenance mode, the file copy and the database step are handled by WordPress; your content, plugins, themes and uploads are not touched. Revertix only lists releases that support your PHP version and that Revertix itself runs on. Tick "Stay on this version" to pause automatic WordPress updates - otherwise WordPress would update itself again within hours - and resume them with one click when you are ready. Take a backup first: older releases may lack security fixes, and plugins that need a newer WordPress may stop working.
+
+= Can I store backups off-site, for example in Google Drive? =
+Not with the free plugin - it keeps backups on your own server and never sends them anywhere. The separate Revertix PRO add-on copies every backup automatically to your own Google Drive or your own FTP/FTPS/SFTP server.
+
 = Is there a Pro version? =
-Yes. The separate Revertix PRO add-on provides push/pull sync between staging and live, scheduled automatic backups, snapshots for premium/custom plugins & themes, staging access control, and priority support. See [nitramix.com](https://nitramix.com/).
+Yes. The separate Revertix PRO add-on provides push/pull sync between staging and live, scheduled automatic backups, off-site backups to Google Drive or your own FTP/SFTP server, snapshots for premium/custom plugins & themes, staging access control, and priority support. See [nitramix.com](https://nitramix.com/).
 
 = Does uninstalling remove my data? =
 Only if you ask it to. Under **Revertix > Settings** there is a "Remove data on uninstall" option (off by default), so your settings and logs are kept unless you opt in.
@@ -149,13 +156,20 @@ Only if you ask it to. Under **Revertix > Settings** there is a "Remove data on 
 
 == Disclaimer ==
 
-Revertix performs powerful operations - creating and restoring backups, importing and exporting entire sites, and rolling plugins and themes back to earlier versions. These actions modify and can overwrite your site's files and database.
+Revertix performs powerful operations - creating and restoring backups, importing and exporting entire sites, and rolling plugins, themes and WordPress itself back to earlier versions. These actions modify and can overwrite your site's files and database.
 
 While Revertix is built to be safe - it takes an automatic safety backup before destructive actions, always keeps your most recent backup, and asks you to confirm before overwriting anything - you use it entirely at your own risk. To the fullest extent permitted by law, Nitramix Ltd. and the plugin authors are not liable for any data loss, downtime, corruption, or other damage arising from the use or inability to use the plugin.
 
 Always keep your own independent, off-site backups, and test major operations (imports, restores, migrations) on a staging copy before running them on a live site. The Software is provided "AS IS", without warranty of any kind, as set out in the GNU General Public License under which it is distributed.
 
 == Changelog ==
+
+= 1.0.3 =
+* **Added:** Rollback can now switch WordPress itself to an earlier release (or back up to a newer one), through WordPress' own updater. Automatic WordPress updates can be paused so the site stays on the version you chose.
+* **Added:** previews of remote backup storage - Google Drive and your own FTP/SFTP server - provided by the separate Revertix PRO add-on. The free plugin itself never sends your backups anywhere.
+* **Fixed:** on some hosts (cPanel) an import left wp-admin unreachable with a 403 error, because the new WordPress folders got stricter permissions than the rest of the site. Folders and files Revertix creates now follow the same permission rules as WordPress itself.
+* **Improved:** System Info now shows the permissions of wp-admin and wp-includes and the folder/file permissions Revertix uses, to make permission problems quick to spot.
+**Release date: November 13, 2026**
 
 = 1.0.2 =
 * **Fixed:** every `%` character in your content was mangled inside exported databases and backups. Percent-encoded values - any slug made from a non-Latin title, encoded URLs - grew to many times their length, and an import could fail outright. Please take a fresh export or backup: anything made before this version carries the damage.
@@ -182,6 +196,9 @@ Always keep your own independent, off-site backups, and test major operations (i
 **Release date: July 24, 2026**
 
 == Upgrade Notice ==
+
+= 1.0.3 =
+Roll WordPress itself back to an earlier release, and a fix for a 403 error on wp-admin after an import on some hosts (cPanel). Update Revertix PRO to 1.0.3 at the same time.
 
 = 1.0.2 =
 Important data fixes for exports, backups and staging. If you use staging, delete and re-create any site made before this version, and take a fresh backup.

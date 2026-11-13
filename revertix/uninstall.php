@@ -131,7 +131,9 @@ $revertix_options = array(
 	'revertix_storage_notice_dismissed',
 	'revertix_shares',
 	'revertix_import_running',
+	'revertix_core_pin',
 );
+delete_transient( 'revertix_core_versions1' );
 foreach ( $revertix_options as $revertix_option ) {
 	delete_option( $revertix_option );
 }

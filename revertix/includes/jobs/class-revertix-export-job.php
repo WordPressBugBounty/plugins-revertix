@@ -685,18 +685,26 @@ class Revertix_Export_Job extends Revertix_Job {
 		if ( 'backups' === $this->store_sub() ) {
 			$is_safety = (bool) $this->state['data']['safety'];
 
-			Revertix_Backup::add(
-				array(
-					'id'      => $this->id,
-					'name'    => '' !== $this->state['data']['label'] ? $this->state['data']['label'] : Revertix_Storage::untokenize( $name ),
-					'file'    => $name,
-					'path'    => $dest,
-					'size'    => (int) filesize( $dest ),
-					'created' => time(),
-					'safety'  => $is_safety,
-					'parts'   => $parts,
-				)
+			$entry = array(
+				'id'      => $this->id,
+				'name'    => '' !== $this->state['data']['label'] ? $this->state['data']['label'] : Revertix_Storage::untokenize( $name ),
+				'file'    => $name,
+				'path'    => $dest,
+				'size'    => (int) filesize( $dest ),
+				'created' => time(),
+				'safety'  => $is_safety,
+				'parts'   => $parts,
 			);
+			Revertix_Backup::add( $entry );
+
+			/**
+			 * Fires once a backup (manual, scheduled or safety) is stored and
+			 * registered. Revertix PRO uses it to copy the backup to remote
+			 * storage.
+			 *
+			 * @param array $entry Backup registry entry.
+			 */
+			do_action( 'revertix_backup_created', $entry );
 
 			// Enforce the safety-backup retention limit once the new one is recorded.
 			if ( $is_safety ) {
